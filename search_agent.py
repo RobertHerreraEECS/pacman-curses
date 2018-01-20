@@ -13,7 +13,6 @@ class PriorityQueue:
 
 
 class searchAgent:
-
     def __init__(self, graph, nodes,costs, node, goal, type):
         self.nodes = nodes
         self.node = node
@@ -26,6 +25,7 @@ class searchAgent:
 
     def cost(self, a,b):
         return self.costs[self.nodes[a]] + self.costs[self.nodes[b]]
+
 
     def heuristic(self,a,b,type):
         heuristic_type = {
@@ -72,7 +72,24 @@ class searchAgent:
                     came_from[neighbor] = current
 
         return came_from, cost_so_far
-        #path = self.reconstruct_path(came_from,start,goal)
-        #self.printPath(self.path,'$')
 
-
+    #newmethod for PACMAN AI
+    def dijktra_search(self):
+        frontier = PriorityQueue()
+        frontier.put(self.node,0)
+        came_from = {}
+        cost_so_far = {}
+        came_from[self.node] = None
+        cost_so_far[self.node] = 0
+        while not frontier.empty():
+            current = frontier.get()
+            if current == self.goal:
+                break
+            neighbors = self.graph[current]
+            for neighbor in neighbors:
+                new_cost = cost_so_far[current] + self.cost(current,neighbor)
+                if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                    cost_so_far[neighbor] = new_cost
+                    priority = new_cost
+                    frontier.put(neighbor,priority)
+                    came_from[neighbor] = current
