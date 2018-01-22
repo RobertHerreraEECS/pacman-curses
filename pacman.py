@@ -146,14 +146,16 @@ class Game(object):
     # stdscr.addstr(str(game_screen.screen) + ' ',curses.color_pair(1))
         curses.start_color()
         curses.use_default_colors()
-        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_CYAN)
-        curses.init_pair(6, curses.COLOR_MAGENTA, curses.COLOR_GREEN)
-        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_GREEN)
-        curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_MAGENTA)
+        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(6, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         #pac man color
         curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_YELLOW)
         #ghost 1 color
         curses.init_pair(5, curses.COLOR_RED, curses.COLOR_RED)
+        #ghost 2 color
+        curses.init_pair(7, curses.COLOR_CYAN, curses.COLOR_CYAN)
         for i in range(game_screen.x):
             for j in range(game_screen.y):
                 if game_screen.screen[i,j] == 0:
@@ -163,13 +165,15 @@ class Game(object):
                 elif game_screen.screen[i,j] == 2:
                     stdscr.addstr('*' + ' ',curses.color_pair(3))
                 elif game_screen.screen[i,j] == 3:
-                    stdscr.addstr(' ' + ' ',curses.color_pair(2))
+                    stdscr.addstr('O' + ' ',curses.color_pair(2))
                 elif game_screen.screen[i,j] == 4:
                     stdscr.addstr('P' + ' ',curses.color_pair(4))
                 elif game_screen.screen[i,j] == 5:
                     stdscr.addstr('G' + ' ',curses.color_pair(5))
                 elif game_screen.screen[i,j] == 6:
                     stdscr.addstr('=' + ' ',curses.color_pair(6))
+                elif game_screen.screen[i,j] == 7:
+                    stdscr.addstr('=' + ' ',curses.color_pair(7))
             stdscr.addstr('\n')
         stdscr.refresh()
         stdscr.move(0, 0)
@@ -226,6 +230,14 @@ def main(stdscr):
     ghost.init_search_agent()
     ghost_trail = []
     
+    # other dude
+    ghost2 = Ghost()
+    ghost2.setBody((game_screen.x/2),(game_screen.y/2) + 1)
+    ghost2.set_map_file('map.txt')
+    ghost2.body_id = 7
+    ghost2.init_search_agent()
+    ghost2_trail = []
+    
     #Pacman test
     pacman2 = PacManAux('map.txt')
     pacman2.setBody((game_screen.x/2) + 5,(game_screen.y/2))
@@ -236,6 +248,7 @@ def main(stdscr):
     
     main_game.register_sprite('pacman',pacman)
     main_game.register_sprite('ghost',ghost)
+    main_game.register_sprite('ghost',ghost2)
     
     
     # set past move as zero
@@ -251,6 +264,7 @@ def main(stdscr):
         # ghost movement
         g_goal = main_game.coord_transform(pacman.body)
         main_game.move_AI_character(game_screen,ghost,g_goal)
+        main_game.move_AI_character(game_screen,ghost2,g_goal)
         
         # move pacman
         main_game.move_AI_character(game_screen,pacman,food[0])
@@ -266,6 +280,7 @@ def main(stdscr):
         game_screen.refresh()
         game_screen.impose([pacman.body],pacman.body_id)
         game_screen.impose([ghost.body],ghost.body_id)
+        game_screen.impose([ghost2.body],ghost2.body_id)
         main_game.printScreen(stdscr,game_screen)
         time.sleep(0.08)
         #end loop
