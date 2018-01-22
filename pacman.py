@@ -11,7 +11,7 @@ import sys
 import re
 import curses
 from search_agent import searchAgent
-from PacCharacters import PacMan,Ghost
+from PacCharacters import PacMan,Ghost, PacManAux
 
 
 class ScreenSizeException(Exception):
@@ -95,7 +95,7 @@ class GameScreen(object):
 
 class Game(object):
     def __init__(self):
-        pass
+        self.sprites = {}
     def check_bounds(self,game_screen,direction,sprite):
         if sprite.body_id == 4:
             #check next cell relative to direction of movement
@@ -122,13 +122,18 @@ class Game(object):
             else:
                 return True
 
-    def check_wrapping(self,game_screen,direction,sprite):
+    def check_wrapping(self,game_screen):
         #check next cell relative to direction of movement
-            if direction == 261 and sprite.body[1] == game_screen.y - 1: #right
+        if len(self.sprites) < 1:
+            raise ValueError("No sprites registered...")
+        for sprite in self.sprites:
+            if sprite.body[1] == game_screen.y: #right
+                game_screen.screen[sprite.body[0],sprite.body[1]] = 1
                 temp = list(sprite.body)
                 temp[1] = 0
                 sprite.body = tuple(temp)
-            elif direction == 260 and sprite.body[1] == 0: #right
+            elif sprite.body[1] - 1 < 0: #right
+                game_screen.screen[sprite.body[0],sprite.body[1]] = 1
                 temp = list(sprite.body)
                 temp[1] = game_screen.y - 1
                 sprite.body = tuple(temp)
@@ -170,6 +175,34 @@ class Game(object):
         stdscr.move(0, 0)
         time.sleep(0.2)
 
+    def move_AI_character(self,game_screen,character,goal):
+        start = (character.body[1],character.body[0])
+        character.AI.search(start,goal)
+        trail = [(t[1], t[0]) for t in character.AI.path]
+        
+        # remove current position
+        trail.pop(0)
+        if 1:
+            game_screen.screen[character.body[0],character.body[1]] = 1
+            character.move(trail[0])
+            #g_prev_state = game_screen.screen[g_trail[0][0],g_trail[0][1]]
+            trail.pop(0)
+        else:
+            #g_prev_state = game_screen.screen[g_trail[0][0],g_trail[0][1]]
+            game_screen.screen[character.body[0],character.body[1]] = 1
+            character.move(trail[0])
+            trail.pop(0)
+
+    @staticmethod
+    def coord_transform(coord):
+        return (coord[1],coord[0])
+
+    def register_sprite(self,sprite,Name=""):
+        if Name == "":
+            raise ValueError("Cannont have empty name")
+        else:
+            self.sprites.update({Name:sprite})
+
 
     def findNextFood(self, pacman, nextFood):
         pass
@@ -185,58 +218,56 @@ def main(stdscr):
     # pacman character
     pacman = PacMan('map.txt')
     pacman.setBody((game_screen.x/2) + 2,(game_screen.y/2))
-    food = pacman.init_search_agent()
+    pacman.init_search_agent()
     # other dude
     ghost = Ghost()
     ghost.setBody((game_screen.x/2),(game_screen.y/2) - 1)
     ghost.set_map_file('map.txt')
     ghost.init_search_agent()
     ghost_trail = []
+    
+    #Pacman test
+    pacman2 = PacManAux('map.txt')
+    pacman2.setBody((game_screen.x/2) + 5,(game_screen.y/2))
+    pacman2.init_search_agent()
+    pacman2.AI.findFood()
+    food = pacman2.AI.food
+    
+    
+    main_game.register_sprite('pacman',pacman)
+    main_game.register_sprite('ghost',ghost)
+    
+    
     # set past move as zero
     prev_move = 0
     g_prev_state = 1
-    p_prev_state = 1
+
     #*** GAME LOOP ***
-    f = False
-    p_loc = (pacman.body[1],pacman.body[0])
     while True: # game loop
-        # No need for keyboard input need in AI VS AI
-        # generate new path
-        g_start = (ghost.body[1],ghost.body[0])
-        g_goal = p_loc
-        p_start = (pacman.body[1],pacman.body[0])
-        pacman.AI.search(p_start)
-        ghost.AI.search(g_start,g_goal)
-        g_trail = [(t[1], t[0]) for t in ghost.AI.path]
-        p_trail = [(t[1], t[0]) for t in pacman.AI.path]
-        # remove current position
-        p_trail.pop(0)
-        g_trail.pop(0)
-        if g_prev_state == 1:
-            #prev_state = game_screen.screen[trail[0][0],trail[0][1]]
-            pacman.move(p_trail[0])
-            p_loc = p_trail.pop(0)
-            game_screen.screen[pacman.body[0],pacman.body[1]] = p_prev_state
-            game_screen.screen[ghost.body[0],ghost.body[1]] = g_prev_state
-            ghost.move(g_trail[0])
-            g_prev_state = game_screen.screen[g_trail[0][0],g_trail[0][1]]
-            p_prev_state = game_screen.screen[p_trail[0][0],p_trail[0][1]]
-            g_trail.pop(0)
-        else:
-            g_prev_state = game_screen.screen[g_trail[0][0],g_trail[0][1]]
-            p_prev_state = game_screen.screen[p_trail[0][0],p_trail[0][1]]
-            game_screen.screen[ghost.body[0],ghost.body[1]] = g_prev_state
-            game_screen.screen[pacman.body[0],pacman.body[1]] = p_prev_state
-            pacman.move(p_trail[0])
-            p_loc = p_trail.pop(0)
-            ghost.move(g_trail[0])
-            g_trail.pop(0)
+        
+        #check all characters position for wrapping
+        main_game.check_wrapping(game_screen)
+        
+        # ghost movement
+        g_goal = main_game.coord_transform(pacman.body)
+        main_game.move_AI_character(game_screen,ghost,g_goal)
+        
+        # move pacman
+        main_game.move_AI_character(game_screen,pacman,food[0])
+        
+        # check if pacman arrived at primary goal
+        if pacman.body == main_game.coord_transform(food[0]):
+            food.pop(0)
+        elif main_game.coord_transform(pacman.body) in food: # pacman found food on the way
+            food.remove(main_game.coord_transform(pacman.body))
+
+
         #*** REFRESH GAME SCREEN WITH LATEST POSITION ***
         game_screen.refresh()
         game_screen.impose([pacman.body],pacman.body_id)
         game_screen.impose([ghost.body],ghost.body_id)
         main_game.printScreen(stdscr,game_screen)
-        time.sleep(1.10)
+        time.sleep(0.08)
         #end loop
 
 

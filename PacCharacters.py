@@ -18,9 +18,24 @@ class PacMan(object):
         self.body = (x,y)
 
     def init_search_agent(self):
-        self.AI = PacManAI(self.map_file)
-        return self.AI.findFood()
+        self.AI = GhostAI(self.map_file)
 
+    def move(self, coord):
+        self.body = coord
+
+class PacManAux(object):
+    def __init__(self, _file):
+        self.body = None
+        self.body_id = 4
+        self.AI = None
+        self.map_file = _file
+    
+    def setBody(self,x,y):
+        self.body = (x,y)
+    
+    def init_search_agent(self):
+        self.AI = PacManAI(self.map_file)
+    
     def move(self, coord):
         self.body = coord
 

@@ -24,11 +24,11 @@ class PacManAI(object):
     def search(self,start):
         heursitics = {}
         for f in self.food:
-            h = searchAgent(self.graph,self.nodes,self.costs,start,f,'simple').heuristic(start,f,'manhattan')
+            h = searchAgent(self.graph,self.nodes,self.costs,start,f,'manhattan').heuristic(start,f,'manhattan')
             heursitics[f] = h
         goal = sorted(heursitics.iterkeys(),key=lambda k: heursitics[k])[0]
         self.food.remove(goal)
-        came_from, cost_so_far = searchAgent(self.graph,self.nodes,self.costs,start,goal,'simple').a_star()
+        came_from, cost_so_far = searchAgent(self.graph,self.nodes,self.costs,start,goal,'manhattan').a_star()
         self.path = self.reconstruct_path(came_from,start,goal)
 
     def findFood(self):
@@ -77,7 +77,7 @@ class PacManAI(object):
         uld = (x-1, y+1)
         uru = (x+1, y-1)
         urd = (x+1, y+1)
-        directions = [UP,DOWN,LEFT,RIGHT, ulu,uld,uru,urd]
+        directions = [UP,DOWN,LEFT,RIGHT]#, ulu,uld,uru,urd]
         neighbors = []
         for direc in directions:
             if direc[0] >= 0  and direc[0] < self.width and direc[1] >= 0 and direc[1] < self.height:
@@ -144,7 +144,7 @@ class GhostAI(object):
         uld = (x-1, y+1)
         uru = (x+1, y-1)
         urd = (x+1, y+1)
-        directions = [UP,DOWN,LEFT,RIGHT, ulu,uld,uru,urd]
+        directions = [UP,DOWN,LEFT,RIGHT]#, ulu,uld,uru,urd]
         neighbors = []
         for direc in directions:
             if direc[0] >= 0  and direc[0] < self.width and direc[1] >= 0 and direc[1] < self.height:
